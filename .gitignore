@@ -1,0 +1,9 @@
+# personal financial data - never commit
+user_profile.json
+ledger/
+data/
+*.jsonl
+*.csv
+!engine/user_profile.example.json
+__pycache__/
+.DS_Store

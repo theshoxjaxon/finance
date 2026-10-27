@@ -1,0 +1,21 @@
+{
+  "_note": "TEMPLATE - replace the placeholder numbers with your real figures (all UZS per month).",
+  "currency": "UZS",
+  "secondary_currencies": ["USD", "EUR"],
+  "monthly_income_uzs": 10000000,
+  "savings_target_uzs": 2000000,
+  "current_savings_uzs": 0,
+  "categories": {
+    "rent":          { "cap": 3500000, "type": "fixed" },
+    "utilities":     { "cap": 400000,  "type": "fixed" },
+    "internet_phone":{ "cap": 150000,  "type": "fixed" },
+    "groceries":     { "cap": 1500000, "type": "flex" },
+    "dining":        { "cap": 800000,  "type": "flex" },
+    "transport":     { "cap": 500000,  "type": "flex" },
+    "subscriptions": { "cap": 200000,  "type": "fixed" },
+    "learning":      { "cap": 300000,  "type": "flex" },
+    "shopping":      { "cap": 400000,  "type": "flex" },
+    "misc":          { "cap": 250000,  "type": "flex" }
+  },
+  "subscriptions_list": []
+}

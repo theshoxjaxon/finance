@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VaultAI Budget</title>
+<style>
+:root{
+  --bg:#f6f7f9;--card:#fff;--ink:#14171c;--muted:#5d6673;--line:#e3e6eb;
+  --accent:#2f6fed;--accent-ink:#fff;--green:#1f9d55;--yellow:#c98a00;--red:#d6453d;
+  --soft:#eef2f8;--radius:12px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1216;--card:#171b21;--ink:#e8ebf0;--muted:#98a2b0;--line:#2a3039;
+  --accent:#5b8ef5;--soft:#1e242d;--green:#3cc47a;--yellow:#e3a92b;--red:#f06a62;}}
+:root[data-theme="dark"]{
+  --bg:#0f1216;--card:#171b21;--ink:#e8ebf0;--muted:#98a2b0;--line:#2a3039;
+  --accent:#5b8ef5;--soft:#1e242d;--green:#3cc47a;--yellow:#e3a92b;--red:#f06a62;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line)}
+.bar{max-width:1080px;margin:0 auto;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.brand{font-weight:700;font-size:17px;margin-right:auto}
+.brand small{color:var(--muted);font-weight:500;margin-left:6px}
+nav{display:flex;gap:4px;overflow-x:auto}
+nav button{border:0;background:none;color:var(--muted);padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer;white-space:nowrap}
+nav button.on{background:var(--soft);color:var(--ink);font-weight:600}
+main{max-width:1080px;margin:0 auto;padding:16px}
+.grid{display:grid;gap:12px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.two{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.card h2{font-size:15px;margin:0 0 12px}
+.kpi .l{color:var(--muted);font-size:13px}.kpi .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12px;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);flex:1 1 120px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+textarea{min-height:120px;font-family:ui-monospace,Menlo,monospace;font-size:13px}
+.btn{border:0;border-radius:8px;padding:9px 14px;font:inherit;font-weight:600;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:var(--soft);color:var(--ink)}
+.btn.sm{padding:5px 9px;font-size:13px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);font-size:14px}
+th{color:var(--muted);font-weight:500;font-size:12px}
+td.n,th.n{text-align:right}
+.scroll{overflow-x:auto}
+.pace{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.pace:last-child{border:0}
+.pace .meta{font-size:12px;color:var(--muted);grid-column:1/-1}
+.track{grid-column:1/-1;height:8px;background:var(--soft);border-radius:99px;position:relative;overflow:hidden}
+.fill{height:100%;border-radius:99px}
+.mark{position:absolute;top:-2px;width:2px;height:12px;background:var(--ink);opacity:.5}
+.g{color:var(--green)}.y{color:var(--yellow)}.r{color:var(--red)}
+.bg-g{background:var(--green)}.bg-y{background:var(--yellow)}.bg-r{background:var(--red)}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;background:var(--soft)}
+.tip{padding:10px 12px;border-left:3px solid var(--accent);background:var(--soft);border-radius:6px;margin:8px 0}
+.tip.r{border-color:var(--red)}.tip.y{border-color:var(--yellow)}.tip.g{border-color:var(--green)}
+.tip b{color:var(--ink)}
+.muted{color:var(--muted)}
+.hide{display:none}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;transition:.2s;pointer-events:none}
+.toast.on{opacity:1}
+.stack{display:flex;flex-direction:column;height:22px;border-radius:6px;overflow:hidden;flex-direction:row}
+@media (max-width:560px){.kpi .v{font-size:19px}th,td{font-size:13px}}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <div class="brand">VaultAI<small>budget & savings</small></div>
+  <nav id="tabs">
+    <button data-t="overview" class="on">Overview</button>
+    <button data-t="tx">Transactions</button>
+    <button data-t="strategy">Strategy</button>
+    <button data-t="setup">Budget setup</button>
+    <button data-t="data">Import / Export</button>
+  </nav>
+  <select id="month" style="width:auto"></select>
+</div></header>
+
+<main>
+<!-- OVERVIEW -->
+<section id="overview">
+  <div class="grid kpis" id="kpis"></div>
+  <div class="grid two" style="margin-top:12px">
+    <div class="card"><h2>Category pacing</h2><div id="paceList"></div></div>
+    <div class="card"><h2>Where the money went</h2><div id="classSplit"></div><h2 style="margin-top:16px">Top vendors</h2><div id="topVendors"></div></div>
+  </div>
+</section>
+
+<!-- TRANSACTIONS -->
+<section id="tx" class="hide">
+  <div class="card">
+    <h2>Add a transaction</h2>
+    <form id="txForm" class="row">
+      <label>Date<input type="date" name="date" required></label>
+      <label>Vendor<input name="vendor" placeholder="Korzinka" required></label>
+      <label>Amount<input name="amount" type="number" step="any" min="0" required></label>
+      <label style="flex:0 1 90px">Currency<select name="currency"><option>UZS</option><option>USD</option><option>EUR</option></select></label>
+      <label class="fxw hide" style="flex:0 1 110px">FX rate → UZS<input name="fx" type="number" step="any"></label>
+      <label>Category<select name="category"></select></label>
+      <label style="flex:0 1 100px">Class<select name="class"><option>need</option><option>want</option><option>waste</option></select></label>
+      <label style="flex:0 1 110px">Platform<select name="platform"><option>Payme</option><option>Click</option><option>Uzum</option><option>Humo</option><option>Uzcard</option><option>Cash</option><option>Bank</option></select></label>
+      <label style="flex:1 1 100%">Income instead?<select name="kind"><option value="expense">Expense</option><option value="income">Income (salary, freelance, bonus)</option></select></label>
+      <button class="btn">Add</button>
+    </form>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="row" style="justify-content:space-between;align-items:center"><h2 style="margin:0">This month</h2><span class="muted" id="txCount"></span></div>
+    <div class="scroll"><table><thead><tr><th>Date</th><th>Vendor</th><th>Category</th><th>Class</th><th class="n">UZS</th><th></th></tr></thead><tbody id="txBody"></tbody></table></div>
+  </div>
+</section>
+
+<!-- STRATEGY -->
+<section id="strategy" class="hide">
+  <div class="grid two">
+    <div class="card"><h2>Savings verdict</h2><div id="verdict"></div></div>
+    <div class="card"><h2>50 / 30 / 20 check</h2><div id="rule"></div></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h2>Savings goals</h2>
+    <form id="goalForm" class="row">
+      <label>Goal<input name="name" placeholder="Emergency fund" required></label>
+      <label>Amount (UZS)<input name="amount" type="number" min="1" required></label>
+      <label>Target date<input name="date" type="date" required></label>
+      <button class="btn">Add goal</button>
+    </form>
+    <div id="goals" style="margin-top:12px"></div>
+  </div>
+  <div class="card" style="margin-top:12px"><h2>Action plan</h2><div id="plan"></div></div>
+  <div class="card" style="margin-top:12px">
+    <h2>Should I buy it?</h2>
+    <form id="buyForm" class="row">
+      <label>Item<input name="item" placeholder="Headphones" required></label>
+      <label>Price (UZS)<input name="price" type="number" min="1" required></label>
+      <label>Category<select name="category"></select></label>
+      <label style="flex:0 1 140px">Type<select name="kind"><option value="want">Want</option><option value="need">Need</option><option value="roi">Earns / saves money</option></select></label>
+      <button class="btn">Decide</button>
+    </form>
+    <div id="buyOut"></div>
+  </div>
+</section>
+
+<!-- SETUP -->
+<section id="setup" class="hide">
+  <div class="card">
+    <h2>Monthly baseline</h2>
+    <form id="profForm" class="row">
+      <label>Monthly income (UZS)<input name="monthly_income_uzs" type="number" min="0"></label>
+      <label>Savings target / month<input name="savings_target_uzs" type="number" min="0"></label>
+      <label>Current savings<input name="current_savings_uzs" type="number" min="0"></label>
+      <button class="btn">Save</button>
+    </form>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h2>Category caps</h2>
+    <p class="muted" style="margin-top:-6px">Fixed = paid once a month (rent, internet). Flex = spent gradually and paced against the calendar.</p>
+    <div class="scroll"><table><thead><tr><th>Category</th><th class="n">Monthly cap (UZS)</th><th>Type</th><th></th></tr></thead><tbody id="catBody"></tbody></table></div>
+    <form id="catForm" class="row" style="margin-top:12px">
+      <label>New category<input name="name" placeholder="gym" required></label>
+      <label>Cap<input name="cap" type="number" min="0" required></label>
+      <label style="flex:0 1 110px">Type<select name="type"><option>flex</option><option>fixed</option></select></label>
+      <button class="btn ghost">Add</button>
+    </form>
+    <div id="capCheck" style="margin-top:12px"></div>
+  </div>
+</section>
+
+<!-- DATA -->
+<section id="data" class="hide">
+  <div class="grid two">
+    <div class="card">
+      <h2>Paste your month</h2>
+      <p class="muted" style="margin-top:-6px">One line per item: <code>date, vendor, amount, category, class</code>. Use <code>income</code> as the category for money in. JSONL lines from the VaultAI skill also work.</p>
+      <textarea id="paste" placeholder="2026-10-01, Salary, 12000000, income, need
+2026-10-02, Korzinka, 245000, groceries, need
+2026-10-03, Yandex Go, 38000, transport, want"></textarea>
+      <div class="row" style="margin-top:8px"><button class="btn" id="pasteBtn">Import lines</button></div>
+    </div>
+    <div class="card">
+      <h2>Export</h2>
+      <div class="row">
+        <button class="btn ghost" id="expJsonl">Ledger .jsonl</button>
+        <button class="btn ghost" id="expCsv">Ledger .csv</button>
+        <button class="btn ghost" id="expProf">user_profile.json</button>
+      </div>
+      <h2 style="margin-top:16px">Import files</h2>
+      <label>Ledger (.jsonl / .csv) or profile (.json)<input type="file" id="fileIn" accept=".jsonl,.json,.csv,.txt" multiple></label>
+      <h2 style="margin-top:16px">Danger zone</h2>
+      <button class="btn ghost" id="wipe">Clear this month</button>
+      <p class="muted" style="font-size:12px">Data stays in this browser only. Export regularly as a backup.</p>
+    </div>
+  </div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== Engine (mirrors vault.py) ===== */
+const EARLY_FLOOR = 0.25;
+const DEFAULT_PROFILE = {
+  currency:"UZS", monthly_income_uzs:0, savings_target_uzs:0, current_savings_uzs:0,
+  categories:{
+    rent:{cap:0,type:"fixed"}, utilities:{cap:0,type:"fixed"}, internet_phone:{cap:0,type:"fixed"},
+    groceries:{cap:0,type:"flex"}, dining:{cap:0,type:"flex"}, transport:{cap:0,type:"flex"},
+    subscriptions:{cap:0,type:"fixed"}, learning:{cap:0,type:"flex"}, shopping:{cap:0,type:"flex"}, misc:{cap:0,type:"flex"}
+  }, goals:[]
+};
+const store = {
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+let profile = store.get("vault.profile", structuredClone(DEFAULT_PROFILE));
+profile.goals ||= [];
+let ledger = store.get("vault.ledger", []);
+const save = () => { store.set("vault.profile", profile); store.set("vault.ledger", ledger); render(); };
+
+const fmt = n => Math.round(n).toLocaleString("en-US").replace(/,/g," ");
+const daysIn = (y,m) => new Date(y, m, 0).getDate();
+const todayISO = () => new Date().toISOString().slice(0,10);
+let curMonth = todayISO().slice(0,7);
+
+function refDay(month){ // day of month to pace against: today if current month, else month end
+  const [y,m] = month.split("-").map(Number), t = todayISO();
+  if (t.startsWith(month)) return {day:+t.slice(8,10), days:daysIn(y,m)};
+  return {day:daysIn(y,m), days:daysIn(y,m)};
+}
+const monthRows = () => ledger.filter(e => e.date.startsWith(curMonth));
+const expenses = () => monthRows().filter(e => e.category !== "income");
+const incomes = () => monthRows().filter(e => e.category === "income");
+
+function paceCategory(cat){
+  const cfg = profile.categories[cat], {day,days} = refDay(curMonth);
+  const rows = expenses().filter(e => e.category === cat);
+  const spent = rows.reduce((s,e)=>s+e.amount_uzs,0), cap = cfg.cap;
+  const out = {cat, type:cfg.type, spent, cap, count:rows.length, day, days};
+  if (cfg.type === "fixed"){ out.status = spent ? "✅" : "⏳"; out.tone = spent > cap && cap ? "r" : "g"; return out; }
+  const expected = Math.max(cap*day/days, cap*EARLY_FLOOR);
+  out.ratio = expected ? spent/expected : (spent ? 9 : 0);
+  out.tone = out.ratio <= 1 ? "g" : out.ratio <= 1.3 ? "y" : "r";
+  out.status = {g:"🟢",y:"🟡",r:"🔴"}[out.tone];
+  out.left = cap - spent; out.perDay = Math.max(out.left,0)/(days-day+1);
+  out.expectedPct = cap ? Math.min(100, cap*day/days/cap*100) : 0;
+  return out;
+}
+function totals(){
+  const inc = incomes().reduce((s,e)=>s+e.amount_uzs,0);
+  const income = inc || profile.monthly_income_uzs;
+  const spent = expenses().reduce((s,e)=>s+e.amount_uzs,0);
+  const unpaidFixed = Object.entries(profile.categories)
+    .filter(([k,c]) => c.type==="fixed" && !expenses().some(e=>e.category===k))
+    .reduce((s,[,c])=>s+c.cap,0);
+  const byClass = {need:0,want:0,waste:0};
+  expenses().forEach(e => byClass[e.class] = (byClass[e.class]||0) + e.amount_uzs);
+  // conservative: every category is assumed to reach at least its cap by month end
+  const committed = Object.keys(profile.categories).reduce((sum,k)=>{
+    const sp = expenses().filter(e=>e.category===k).reduce((a,e)=>a+e.amount_uzs,0);
+    return sum + Math.max(sp, profile.categories[k].cap); },0)
+    + expenses().filter(e=>!profile.categories[e.category]).reduce((a,e)=>a+e.amount_uzs,0);
+  const projected = income - committed;
+  return {income, incomeLogged:!!inc, spent, unpaidFixed, byClass, projected, target:profile.savings_target_uzs};
+}
+function makeId(e){
+  const base = `${e.date}-${e.vendor.toLowerCase().replace(/\s+/g,"")}-${e.amount_uzs}`;
+  const n = ledger.filter(x => (x.id||"").startsWith(base)).length + 1;
+  return `${base}-${String(n).padStart(2,"0")}`;
+}
+function addEntry(e, {confirmDupes=true}={}){
+  if (e.category !== "income" && !profile.categories[e.category]){
+    profile.categories[e.category] = {cap:0,type:"flex"};
+  }
+  const dup = ledger.find(x => x.date===e.date && x.amount_uzs===e.amount_uzs && x.vendor.toLowerCase()===e.vendor.toLowerCase());
+  if (dup && confirmDupes && !confirm(`Looks like a duplicate of ${dup.vendor} ${fmt(dup.amount_uzs)} on ${dup.date}. Add anyway?`)) return false;
+  e.id = makeId(e);
+  e.platform ||= "unknown"; e.source ||= "manual";
+  e.original ||= {amount:e.amount_uzs, currency:"UZS", fx_rate:null};
+  ledger.push(e); return true;
+}
+
+/* ===== UI ===== */
+const $ = s => document.querySelector(s);
+const toast = m => { const t=$("#toast"); t.textContent=m; t.classList.add("on"); setTimeout(()=>t.classList.remove("on"),1800); };
+document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#tabs button").forEach(x=>x.classList.toggle("on", x===b));
+  document.querySelectorAll("main > section").forEach(s=>s.classList.toggle("hide", s.id!==b.dataset.t));
+  try{localStorage.setItem("vault.tab", b.dataset.t)}catch(e){}
+});
+try{const t=localStorage.getItem("vault.tab"); if(t) document.querySelector(`#tabs [data-t="${t}"]`)?.click();}catch(e){}
+
+function monthOptions(){
+  const set = new Set(ledger.map(e=>e.date.slice(0,7))); set.add(todayISO().slice(0,7)); set.add(curMonth);
+  $("#month").innerHTML = [...set].sort().reverse().map(m=>`<option ${m===curMonth?"selected":""}>${m}</option>`).join("");
+}
+$("#month").onchange = e => { curMonth = e.target.value; render(); };
+
+function catOptions(sel){
+  sel.innerHTML = Object.keys(profile.categories).map(c=>`<option>${c}</option>`).join("");
+}
+
+function kpi(l,v,s="",tone=""){return `<div class="card kpi"><div class="l">${l}</div><div class="v ${tone}">${v}</div><div class="s">${s}</div></div>`}
+
+function renderOverview(){
+  const t = totals(), rate = t.income ? t.projected/t.income*100 : 0;
+  const gap = t.projected - t.target;
+  $("#kpis").innerHTML =
+    kpi("Income", fmt(t.income), t.incomeLogged ? "logged this month" : "from baseline") +
+    kpi("Spent so far", fmt(t.spent), `${expenses().length} expenses`) +
+    kpi("Bills still due", fmt(t.unpaidFixed), "unpaid fixed caps") +
+    kpi("Projected savings", fmt(t.projected), `if every cap is used · target ${fmt(t.target)}`, gap>=0?"g":"r") +
+    kpi("Savings rate", (t.income?rate.toFixed(1):"0")+"%", gap>=0?"on target":`short ${fmt(-gap)}`, gap>=0?"g":"r");
+
+  $("#paceList").innerHTML = Object.keys(profile.categories).map(paceCategory).map(p=>{
+    const pct = p.cap ? Math.min(100, p.spent/p.cap*100) : (p.spent?100:0);
+    const meta = p.type==="fixed" ? `fixed · ${p.spent?"paid":"due"}`
+      : `x${p.count} · ratio ${p.ratio.toFixed(2)} · ${fmt(Math.max(p.left,0))} left ≈ ${fmt(p.perDay)}/day`;
+    return `<div class="pace"><div>${p.status} <b>${p.cat}</b></div><div class="muted">${fmt(p.spent)} / ${fmt(p.cap)}</div>
+      <div class="track"><div class="fill bg-${p.tone}" style="width:${pct}%"></div>${p.type==="flex"?`<div class="mark" style="left:${p.expectedPct}%"></div>`:""}</div>
+      <div class="meta">${meta}</div></div>`;
+  }).join("") + `<p class="muted" style="font-size:12px">The thin marker shows where you "should" be today.</p>`;
+
+  const c = t.byClass, tot = c.need+c.want+c.waste || 1;
+  $("#classSplit").innerHTML = `<div class="stack">${[["need","g"],["want","y"],["waste","r"]].map(([k,tn])=>`<div class="bg-${tn}" style="width:${c[k]/tot*100}%"></div>`).join("")}</div>
+    <table style="margin-top:8px">${[["need","g","Needs"],["want","y","Wants"],["waste","r","Waste"]].map(([k,tn,l])=>`<tr><td><span class="${tn}">●</span> ${l}</td><td class="n">${fmt(c[k])}</td><td class="n muted">${(c[k]/tot*100).toFixed(0)}%</td></tr>`).join("")}</table>
+    ${c.waste && t.target ? `<div class="tip r">Waste = <b>${(c.waste/t.target*100).toFixed(1)}%</b> of your monthly savings target.</div>`:""}`;
+
+  const v = {}; expenses().forEach(e=>{v[e.vendor] ||= [0,0]; v[e.vendor][0]++; v[e.vendor][1]+=e.amount_uzs;});
+  const top = Object.entries(v).sort((a,b)=>b[1][0]-a[1][0]||b[1][1]-a[1][1]).slice(0,5);
+  $("#topVendors").innerHTML = top.length ? `<table>${top.map(([n,[c,s]])=>`<tr><td>${esc(n)}</td><td class="n muted">x${c}</td><td class="n">${fmt(s)}</td></tr>`).join("")}</table>` : `<p class="muted">No expenses yet.</p>`;
+}
+
+function renderTx(){
+  const rows = monthRows().slice().sort((a,b)=>b.date.localeCompare(a.date));
+  $("#txCount").textContent = `${rows.length} entries`;
+  $("#txBody").innerHTML = rows.map(e=>`<tr><td>${e.date.slice(5)}</td><td>${esc(e.vendor)}<div class="muted" style="font-size:12px">${esc(e.platform||"")}${e.original?.currency&&e.original.currency!=="UZS"?` · ${e.original.amount} ${e.original.currency}`:""}</div></td>
+    <td>${e.category}</td><td>${e.category==="income"?'<span class="pill g">income</span>':`<span class="pill ${{need:"g",want:"y",waste:"r"}[e.class]}">${e.class}</span>`}</td>
+    <td class="n ${e.category==="income"?"g":""}">${e.category==="income"?"+":""}${fmt(e.amount_uzs)}</td><td><button class="btn ghost sm" data-del="${e.id}">✕</button></td></tr>`).join("")
+    || `<tr><td colspan="6" class="muted">Nothing logged for ${curMonth}. Add one above or paste your month in Import.</td></tr>`;
+  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ledger=ledger.filter(e=>e.id!==b.dataset.del);save();});
+}
+
+function renderStrategy(){
+  const t = totals(), gap = t.projected - t.target;
+  const paces = Object.keys(profile.categories).map(paceCategory);
+  $("#verdict").innerHTML = !t.income ? `<p class="muted">Add your income in Budget setup or log it as a transaction.</p>` :
+    `<div class="kpi"><div class="v ${gap>=0?"g":"r"}">${gap>=0?"On track":"Behind"} · ${fmt(Math.abs(gap))} UZS ${gap>=0?"above":"below"} target</div>
+     <div class="s">Projected ${fmt(t.projected)} saved this month (${(t.projected/t.income*100).toFixed(1)}% of income). Target ${fmt(t.target)}.</div></div>
+     <p>At this pace you save <b>${fmt(t.projected*12)}</b> a year. Current savings: <b>${fmt(profile.current_savings_uzs)}</b>.</p>
+     ${(() => { const fixedMonthly = Object.values(profile.categories).reduce((s,c)=>s+c.cap,0);
+        return fixedMonthly ? `<p class="muted">Emergency runway: <b>${(profile.current_savings_uzs/fixedMonthly).toFixed(1)} months</b> of your full budget. Aim for 3–6.</p>` : ""; })()}`;
+
+  const inc = t.income || 1, c = t.byClass;
+  const actual = {needs:c.need, wants:c.want+c.waste, savings:Math.max(t.projected,0)};
+  const ideal = {needs:.5, wants:.3, savings:.2};
+  $("#rule").innerHTML = `<table><tr><th></th><th class="n">Actual</th><th class="n">Ideal</th><th class="n">Ideal UZS</th></tr>${Object.keys(ideal).map(k=>{
+      const a = actual[k]/inc, off = k==="savings" ? a < ideal[k] : a > ideal[k];
+      return `<tr><td>${k[0].toUpperCase()+k.slice(1)}</td><td class="n ${off?"r":"g"}">${(a*100).toFixed(0)}%</td><td class="n muted">${ideal[k]*100}%</td><td class="n">${fmt(inc*ideal[k])}</td></tr>`;}).join("")}</table>
+    <p class="muted" style="font-size:12px">Needs/wants = logged so far; savings = projected if every cap is used.</p>`;
+
+  // goals
+  const now = new Date();
+  $("#goals").innerHTML = profile.goals.length ? `<div class="scroll"><table><tr><th>Goal</th><th class="n">Amount</th><th>By</th><th class="n">Need / month</th><th>Status</th><th></th></tr>${profile.goals.map((g,i)=>{
+      const d = new Date(g.date), months = Math.max(1,(d.getFullYear()-now.getFullYear())*12 + d.getMonth()-now.getMonth());
+      const need = g.amount/months, ok = t.projected >= need;
+      const eta = t.projected>0 ? Math.ceil(g.amount/t.projected) : null;
+      return `<tr><td>${esc(g.name)}</td><td class="n">${fmt(g.amount)}</td><td>${g.date}</td><td class="n">${fmt(need)}</td>
+        <td class="${ok?"g":"r"}">${ok?"Reachable":"Short "+fmt(need-t.projected)+"/mo"}${eta?`<div class="muted" style="font-size:12px">~${eta} mo at current pace</div>`:""}</td>
+        <td><button class="btn ghost sm" data-goal="${i}">✕</button></td></tr>`;}).join("")}</table></div>
+      <p class="muted" style="font-size:12px">Goals are checked one at a time against this month's projected savings.</p>` : `<p class="muted">Add a goal: emergency fund, laptop, relocation, course…</p>`;
+  document.querySelectorAll("[data-goal]").forEach(b=>b.onclick=()=>{profile.goals.splice(+b.dataset.goal,1);save();});
+
+  // plan
+  const tips = [];
+  paces.filter(p=>p.type==="flex"&&p.tone==="r").forEach(p=>tips.push(["r",`<b>${p.cat}</b> is running hot (ratio ${p.ratio.toFixed(2)}). Hold it to <b>${fmt(p.perDay)}/day</b> for the rest of the month to land on cap.`]));
+  paces.filter(p=>p.type==="flex"&&p.tone==="y").forEach(p=>tips.push(["y",`<b>${p.cat}</b> is slightly ahead of pace. ${fmt(Math.max(p.left,0))} left — about ${fmt(p.perDay)}/day.`]));
+  if (c.waste) tips.push(["r",`Waste so far: <b>${fmt(c.waste)}</b>. Repeated monthly that's <b>${fmt(c.waste*12)}/year</b>.`]);
+  const v = {}; expenses().filter(e=>e.class!=="need").forEach(e=>{v[e.vendor] ||= [0,0]; v[e.vendor][0]++; v[e.vendor][1]+=e.amount_uzs;});
+  Object.entries(v).filter(([,x])=>x[0]>=4).sort((a,b)=>b[1][1]-a[1][1]).slice(0,3).forEach(([n,[cnt,s]])=>
+    tips.push(["y",`<b>${esc(n)}</b> x${cnt} this month (${fmt(s)}). Cutting it in half saves <b>${fmt(s/2*12)}/year</b>.`]));
+  if (t.income && gap < 0){
+    const flexLeft = paces.filter(p=>p.type==="flex").reduce((s,p)=>s+Math.max(p.left,0),0);
+    tips.push(["r",`To hit the target this month, trim <b>${fmt(-gap)}</b> from the <b>${fmt(flexLeft)}</b> flex budget still unspent (${flexLeft?(-gap/flexLeft*100).toFixed(0):"–"}%).`]);
+  }
+  if (t.income && gap >= 0) tips.push(["g",`Move <b>${fmt(t.target)}</b> to savings right after payday — pay yourself first, before flex spending starts.`]);
+  const capSum = Object.values(profile.categories).reduce((s,c)=>s+c.cap,0);
+  if (profile.monthly_income_uzs && capSum + profile.savings_target_uzs > profile.monthly_income_uzs)
+    tips.push(["r",`Your caps (${fmt(capSum)}) + savings target exceed income by <b>${fmt(capSum+profile.savings_target_uzs-profile.monthly_income_uzs)}</b>. The plan can't work as set — lower some caps.`]);
+  $("#plan").innerHTML = tips.length ? tips.map(([tn,h])=>`<div class="tip ${tn}">${h}</div>`).join("") : `<p class="muted">Log some transactions and set caps to get a plan.</p>`;
+}
+
+function renderSetup(){
+  const f = $("#profForm");
+  ["monthly_income_uzs","savings_target_uzs","current_savings_uzs"].forEach(k=>f[k].value = profile[k]||"");
+  $("#catBody").innerHTML = Object.entries(profile.categories).map(([k,c])=>`<tr><td>${k}</td>
+    <td class="n"><input type="number" min="0" value="${c.cap}" data-cap="${k}" style="max-width:140px;text-align:right"></td>
+    <td><select data-type="${k}" style="width:auto"><option ${c.type==="flex"?"selected":""}>flex</option><option ${c.type==="fixed"?"selected":""}>fixed</option></select></td>
+    <td><button class="btn ghost sm" data-rmcat="${k}">✕</button></td></tr>`).join("");
+  document.querySelectorAll("[data-cap]").forEach(i=>i.onchange=()=>{profile.categories[i.dataset.cap].cap=+i.value||0;save();});
+  document.querySelectorAll("[data-type]").forEach(i=>i.onchange=()=>{profile.categories[i.dataset.type].type=i.value;save();});
+  document.querySelectorAll("[data-rmcat]").forEach(b=>b.onclick=()=>{delete profile.categories[b.dataset.rmcat];save();});
+  const capSum = Object.values(profile.categories).reduce((s,c)=>s+c.cap,0), inc = profile.monthly_income_uzs;
+  const left = inc - capSum - profile.savings_target_uzs;
+  $("#capCheck").innerHTML = inc ? `<div class="tip ${left>=0?"g":"r"}">Income ${fmt(inc)} − caps ${fmt(capSum)} − savings ${fmt(profile.savings_target_uzs)} = <b>${fmt(left)}</b> ${left>=0?"unallocated":"over-allocated"}</div>` : "";
+}
+
+function render(){ monthOptions(); catOptions($("#txForm").category); catOptions($("#buyForm").category); renderOverview(); renderTx(); renderStrategy(); renderSetup(); }
+const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* forms */
+const txf = $("#txForm"); txf.date.value = todayISO();
+txf.currency.onchange = () => $(".fxw").classList.toggle("hide", txf.currency.value==="UZS");
+txf.kind.onchange = () => { const inc = txf.kind.value==="income"; txf.category.disabled = inc; txf.class.disabled = inc; };
+txf.onsubmit = ev => { ev.preventDefault();
+  const amt = +txf.amount.value, cur = txf.currency.value, fx = cur==="UZS" ? null : +txf.fx.value;
+  if (cur!=="UZS" && !fx) return toast("Enter the FX rate for that date");
+  const income = txf.kind.value==="income";
+  const e = {date:txf.date.value, vendor:txf.vendor.value.trim(), platform:txf.platform.value,
+    amount_uzs:Math.round(cur==="UZS"?amt:amt*fx), original:{amount:amt,currency:cur,fx_rate:fx},
+    category: income ? "income" : txf.category.value, class: income ? "need" : txf.class.value, source:"manual"};
+  if (addEntry(e)){ curMonth = e.date.slice(0,7); save(); txf.vendor.value=""; txf.amount.value=""; toast("Added"); }
+};
+$("#goalForm").onsubmit = ev => { ev.preventDefault(); const f=ev.target;
+  profile.goals.push({name:f.name.value.trim(), amount:+f.amount.value, date:f.date.value}); f.reset(); save(); };
+$("#profForm").onsubmit = ev => { ev.preventDefault(); const f=ev.target;
+  ["monthly_income_uzs","savings_target_uzs","current_savings_uzs"].forEach(k=>profile[k]=+f[k].value||0); save(); toast("Saved"); };
+$("#catForm").onsubmit = ev => { ev.preventDefault(); const f=ev.target, k=f.name.value.trim().toLowerCase().replace(/\s+/g,"_");
+  if (k==="income") return toast("'income' is reserved"); profile.categories[k]={cap:+f.cap.value||0,type:f.type.value}; f.reset(); save(); };
+$("#buyForm").onsubmit = ev => { ev.preventDefault(); const f=ev.target, price=+f.price.value, t=totals();
+  const p = paceCategory(f.category.value), flexLeft = p.type==="flex" ? Math.max(p.left,0) : 0;
+  const ofTarget = t.target ? price/t.target*100 : 0, surplus = t.projected - t.target;
+  let v, why;
+  if (f.kind.value==="need"){ v = price<=flexLeft||surplus>=price ? "BUY" : "BUY (cheapest option)"; why = "It's a need — the question is only how cheaply."; }
+  else if (price <= flexLeft && p.tone!=="r"){ v="BUY"; why=`Fits the ${f.category.value} budget: ${fmt(flexLeft)} left after caps.`; }
+  else if (surplus >= price*2 && p.tone!=="r"){ v="BUY"; why=`Over the ${f.category.value} cap, but you're ${fmt(surplus)} above your savings target, so pay it from the surplus — not from next month.`; }
+  else if (surplus >= price || (f.kind.value==="roi" && t.projected >= price)){ v="WAIT"; why=`${fmt(price)} vs ${fmt(flexLeft)} left in ${f.category.value}. Your surplus could cover it, but it would use ${(price/Math.max(surplus,1)*100).toFixed(0)}% of it. Wait 7 days or until next month's cap resets.`; }
+  else { v="PASS"; why=`It doesn't fit: ${fmt(price)} vs ${fmt(flexLeft)} left in ${f.category.value}, and you're ${surplus>=0?fmt(surplus)+" above":fmt(-surplus)+" below"} your savings target.`; }
+  const months = t.projected>0 ? price/t.projected : null;
+  $("#buyOut").innerHTML = `<div class="tip ${v.startsWith("BUY")?"g":v==="WAIT"?"y":"r"}"><b style="font-size:17px">${v}</b> — ${esc(f.item.value)}, ${fmt(price)} UZS<br>${why}
+    ${months?`<br><span class="muted">= ${months.toFixed(1)} months of your current savings pace · ${ofTarget.toFixed(0)}% of monthly target</span>`:""}</div>`;
+};
+
+/* import / export */
+function parseLine(l){
+  l = l.trim(); if (!l) return null;
+  if (l.startsWith("{")) return JSON.parse(l);
+  const [date,vendor,amount,category="misc",cls="want"] = l.split(/\s*[,;\t]\s*/);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(+amount)) throw new Error("Bad line: "+l);
+  const cat = category.toLowerCase();
+  return {date, vendor, amount_uzs:Math.round(+amount), category:cat, class:cat==="income"?"need":cls.toLowerCase(), source:"import"};
+}
+function importText(txt){
+  let ok=0, skip=0, bad=[];
+  txt.split(/\r?\n/).forEach(l=>{ if (/^date\s*,/i.test(l)) return;
+    try{ const e=parseLine(l); if(!e) return;
+      const dup = ledger.some(x=>x.id&&x.id===e.id || (x.date===e.date&&x.amount_uzs===e.amount_uzs&&x.vendor.toLowerCase()===e.vendor.toLowerCase()));
+      if (dup){skip++;return;} delete e.id; addEntry(e,{confirmDupes:false}); ok++; }
+    catch(err){ bad.push(l); } });
+  if (ok) curMonth = ledger[ledger.length-1].date.slice(0,7);
+  save(); toast(`Imported ${ok}${skip?`, skipped ${skip} duplicates`:""}${bad.length?`, ${bad.length} bad lines`:""}`);
+}
+$("#pasteBtn").onclick = () => { importText($("#paste").value); $("#paste").value=""; };
+$("#fileIn").onchange = async ev => { for (const f of ev.target.files){ const txt = await f.text();
+  if (f.name.endsWith(".json")){ try{ const p=JSON.parse(txt); if(p.categories){ delete p._note; profile={...DEFAULT_PROFILE,...p,goals:p.goals||profile.goals}; save(); toast("Profile loaded"); } }catch(e){toast("Invalid JSON");} }
+  else importText(txt); } ev.target.value=""; };
+function download(name, text, type="text/plain"){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
+$("#expJsonl").onclick = () => download(`${curMonth}.jsonl`, monthRows().map(e=>JSON.stringify(e)).join("\n")+"\n");
+$("#expCsv").onclick = () => { const cols=["id","date","vendor","platform","amount_uzs","category","class","source"];
+  download(`${curMonth}.csv`, [cols.join(","), ...monthRows().map(e=>cols.map(c=>`"${String(e[c]??"").replace(/"/g,'""')}"`).join(","))].join("\n"), "text/csv"); };
+$("#expProf").onclick = () => download("user_profile.json", JSON.stringify(profile,null,2), "application/json");
+$("#wipe").onclick = () => { if (confirm(`Delete all ${monthRows().length} entries for ${curMonth}?`)){ ledger = ledger.filter(e=>!e.date.startsWith(curMonth)); save(); } };
+
+render();
+</script>
+</body>
+</html>
